@@ -1,7 +1,7 @@
 defmodule Mix.Tasks.Petal.Install do
   use Mix.Task
 
-  @shortdoc "Instals Petal UI components"
+  @shortdoc "Installs Petal UI components"
 
   def run(args) do
     IO.inspect(args, label: "args")
@@ -28,6 +28,7 @@ defmodule Mix.Tasks.Petal.Install do
           :ok <- copy_petals_css(),
           :ok <- update_css_imports(),
           {:ok, project_name} <- get_project_name(),
+          :ok <- add_alpine_js(project_name),
           :ok <- copy_all_components(project_name)
     do
       IO.puts "\n\n🎊 Finished 🎊\n\n"
@@ -75,6 +76,59 @@ defmodule Mix.Tasks.Petal.Install do
             end
         {:error, reason}      ->
             {:error, "Failed to read app.css: #{reason}"}
+    end
+  end
+
+  defp add_alpine_js(project_name) do
+    root_layout_path = Path.join(["lib", "#{project_name}_web", "components", "layouts", "root.html.heex"])
+
+    case File.read(root_layout_path) do
+      {:ok, content} ->
+        alpine_core_regex       = ~r/<script[^>]*src="[^"]*alpinejs@[^"]*\/dist\/cdn\.min\.js"[^>]*>/
+        alpine_collapse_regex   = ~r/<script[^>]*src="[^"]*alpinejs\/collapse@[^"]*\/dist\/cdn\.min\.js"[^>]*>/
+
+        alpine_core_script      = ~s(<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>)
+        alpine_collapse_script  = ~s(<script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>)
+
+        has_core?     = Regex.match?(alpine_core_regex, content)
+        has_collapse? = Regex.match?(alpine_collapse_regex, content)
+
+        cond do
+          has_core? and has_collapse?   ->
+              IO.puts("Alpine JS scripts already present; no overwrite")
+              :ok
+
+          has_core?                     ->
+              IO.puts "Root layout contains alpine js core; alpine collapse script will be added"
+              updated_content = get_updated_root_layout_content(content, alpine_collapse_script)
+              write_updated_root_layout_content(root_layout_path, updated_content)
+
+          has_collapse?                 ->
+              IO.puts "Root layout contains alpine js collapse script; core script will be added"
+              updated_content = get_updated_root_layout_content(content, alpine_core_script)
+              write_updated_root_layout_content(root_layout_path, updated_content)
+
+          true                          ->
+              updated_content = get_updated_root_layout_content(content, "#{alpine_core_script}\n    #{alpine_collapse_script}")
+              write_updated_root_layout_content(root_layout_path, updated_content)
+        end
+
+      {:error, :enoent} ->
+          {:error, "Root layout not found at #{root_layout_path}"}
+
+      {:error, reason} ->
+          {:error, "Failed to read root layout: #{reason}"}
+    end
+  end
+
+  defp get_updated_root_layout_content(content, script), do: String.replace(content, "<head>", "<head>\n    #{script}\n", global: false)
+
+  defp write_updated_root_layout_content(root_layout_path, updated_content) do
+    case File.write(root_layout_path, updated_content) do
+      :ok               ->
+          :ok
+      {:error, reason}  ->
+          {:error, "Failed to add Alpine JS scripts to root layout: #{reason}"}
     end
   end
 
