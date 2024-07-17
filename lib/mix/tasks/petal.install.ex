@@ -50,7 +50,7 @@ defmodule Mix.Tasks.Petal.Install do
 
   defp update_css_imports do
     app_css_path = Path.join(["assets", "css", "app.css"])
-    import_statement = "@import \"./petals_default.css\";"
+    import_statement = "@import \"./petals_default.css\";\n"
 
     case File.read(app_css_path) do
       {:ok, existing_content} ->
