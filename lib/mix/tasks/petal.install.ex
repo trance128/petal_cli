@@ -227,10 +227,17 @@ defmodule Mix.Tasks.Petal.Install do
   end
 
   defp setup do
-    with  :ok                 <- phoenix_project?(),
-          {:ok, project_name} <- get_project_name()
+    with  :ok <- phoenix_project?(),
+          :ok <- copy_petals_css(),
+          :ok <- update_css_imports(),
+          {:ok, project_name} <- get_project_name(),
+          :ok <- add_alpine_js(project_name),
+          :ok <- update_tailwind_config(),
+          {:ok, _} <- create_petal_components_folder(project_name)
     do
-      create_petal_components_folder(project_name)
+      IO.puts "\n\n🎊 Finished Setup 🎊\n\n"
+    else
+      {:error, reason} -> IO.puts reason
     end
   end
 
@@ -265,8 +272,7 @@ defmodule Mix.Tasks.Petal.Install do
   end
 
   defp create_petal_components_folder(project_name) do
-    dir = Path.join(["lib", "#{project_name}_web", "components"])
-    file_path = Path.join(dir, "petal_components")
+    file_path = Path.join(["lib", "#{project_name}_web", "components", "petal_components"])
 
     case File.mkdir(file_path) do
       :ok               -> {:ok, file_path}
