@@ -1,14 +1,16 @@
 defmodule PetalInstaller.ComponentManager do
   alias   PetalInstaller.{FileManager, Constants}
 
-  def copy_all_components do
-    # FileManager.get_copy_all_component_paths()
-    # |> FileManager.recursive_copy()
+  def copy_all_components(no_rename?) do
+    if no_rename? do
+      FileManager.get_copy_all_component_paths()
+      |> FileManager.recursive_copy()
+    else
+      web_namespace = FileManager.get_web_namespace()
 
-    web_namespace = FileManager.get_web_namespace()
-
-    FileManager.get_copy_all_component_paths()
-    |> copy_and_modify_recursively(web_namespace)
+      FileManager.get_copy_all_component_paths()
+      |> copy_and_modify_recursively(web_namespace)
+    end
   end
 
   defp copy_and_modify_recursively({source_dir, dest_dir}, web_namespace) do
@@ -41,27 +43,26 @@ defmodule PetalInstaller.ComponentManager do
     |> String.replace(~r/(\s|^)PetalComponents/, "\\1#{web_namespace}.PetalComponents")
   end
 
-  def fetch_components([]) do
+  def fetch_components([], _) do
     IO.puts "Specify component names or use --list to see available components"
+    :ok
   end
 
-  def fetch_components(component_names) do
-    res = Enum.map(component_names, &fetch_component(&1))
+  def fetch_components(component_names, no_rename?) do
+    res = Enum.map(component_names, &fetch_component(&1, no_rename?))
 
     if Enum.any?(res, &match?({:error, _}, &1)) do
       Enum.each(res, fn
           {:error, reason}  -> IO.puts reason
           _                 -> nil
       end)
-
-      IO.puts "\nTask Finished\n"
     else
-      IO.puts "\n\n🎊 Finished fetching #{component_names} 🎊\n\n"
+      :ok
     end
   end
 
   ### Will also fetch any dependencies if they don't already exist in users' project
-  def copy_specific_component(component_name) do
+  def copy_specific_component(component_name, no_rename?) do
     {source_path, to_path} = FileManager.get_component_paths(component_name)
 
     if FileManager.exists?(to_path) do
@@ -69,33 +70,58 @@ defmodule PetalInstaller.ComponentManager do
       response = IO.gets("Overwrite?  (y/n):  ") |> String.trim() |> String.downcase()
 
       case response do
-        "y" -> cont_copy_component(source_path, to_path)
+        "y" -> cont_copy_component(source_path, to_path, no_rename?)
         _   ->
           IO.puts("Skipping #{component_name}")
           :ok
       end
 
     else
-      cont_copy_component(source_path, to_path)
+      cont_copy_component(source_path, to_path, no_rename?)
     end
   end
 
-  defp fetch_component(name) do
+  defp fetch_component(name, no_rename?) do
     cond do
       name == "icon"                   ->
-          handle_icon_component()
+          handle_icon_component(no_rename?)
       Enum.member?(Constants.components(), name)  ->
-          copy_specific_component(name)
+          copy_specific_component(name, no_rename?)
       true                             ->
           {:error, "Component #{name} not found"}
     end
   end
 
-  defp cont_copy_component(source_path, to_path) do
-    web_namespace = FileManager.get_web_namespace()
+  defp cont_copy_component(source_path, to_path, no_rename?) do
+    if no_rename? do
+      extract_and_get_dependencies(source_path)
+      FileManager.copy(source_path, to_path)
+    else
+      web_namespace = FileManager.get_web_namespace()
 
-    extract_and_get_dependencies(source_path, web_namespace)
-    modify_and_write_component(source_path, to_path, web_namespace)
+      extract_and_get_dependencies(source_path, web_namespace)
+      modify_and_write_component(source_path, to_path, web_namespace)
+    end
+  end
+
+  # Trigger when no_rename? is true
+  defp extract_and_get_dependencies(source_path) do
+    content = FileManager.read!(source_path)
+
+    dependencies = extract_dependencies(content)
+    Enum.each(dependencies, fn dep ->
+      handle_component_dependency(dep)
+    end)
+  end
+
+  # Trigger when no_rename? is true
+  defp handle_component_dependency(component_name) do
+    {source_path, target_path} = FileManager.get_component_paths(component_name)
+
+    if not FileManager.exists?(target_path) do
+      extract_and_get_dependencies(source_path)
+      FileManager.copy(source_path, target_path, "Error copying component #{component_name}")
+    end
   end
 
   ### Checks for any component dependencies, and installs them if not present
@@ -135,16 +161,21 @@ defmodule PetalInstaller.ComponentManager do
     |> Macro.underscore()
   end
 
-  defp handle_icon_component() do
-    with  :ok <- copy_specific_component("icon"),
-          :ok <- copy_icon_folder()
+  defp handle_icon_component(no_rename?) do
+    with  :ok <- copy_specific_component("icon", no_rename?),
+          :ok <- copy_icon_folder(no_rename?)
     do
           :ok
     end
   end
 
-  defp copy_icon_folder() do
-    FileManager.get_component_paths("icons")
-    |> FileManager.recursive_copy()
+  defp copy_icon_folder(no_rename?) do
+    {source, dest} = FileManager.get_component_paths("icons")
+    if no_rename? do
+      FileManager.recursive_copy({source, dest})
+    else
+      web_namespace = FileManager.get_web_namespace()
+      modify_and_write_component(source, dest, web_namespace)
+    end
   end
 end
