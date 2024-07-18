@@ -29,6 +29,7 @@ defmodule Mix.Tasks.Petal.Install do
           :ok <- update_css_imports(),
           {:ok, project_name} <- get_project_name(),
           :ok <- add_alpine_js(project_name),
+          :ok <- update_tailwind_config(),
           :ok <- copy_all_components(project_name)
     do
       IO.puts "\n\n🎊 Finished 🎊\n\n"
@@ -130,6 +131,87 @@ defmodule Mix.Tasks.Petal.Install do
       {:error, reason}  ->
           {:error, "Failed to add Alpine JS scripts to root layout: #{reason}"}
     end
+  end
+
+
+  defp update_tailwind_config do
+    config_path = Path.join(["assets", "tailwind.config.js"])
+
+    case File.read(config_path) do
+      {:ok, content} ->
+          updated_content =
+            content
+            |> add_colors_import()
+            |> add_color_palette()
+
+          case File.write(config_path, updated_content) do
+            :ok               ->
+                :ok
+            {:error, reason}  ->
+                {:error, "Failed to write updated tailwind config: #{reason}"}
+          end
+
+      {:error, :enoent} ->
+          {:error, "tailwind.config.js not found at #{config_path}.  Is tailwind installed?"}
+
+      {:error, reason}  ->
+          {:error, "Failed to read tailwind.config.js: #{reason}"}
+    end
+  end
+
+  defp add_colors_import(content) do
+    if String.contains?(content, "const colors = require(\"tailwindcss/colors\")") do
+      IO.puts "Tailwind config already contains colors import; skipping..."
+      content
+    else
+      "const colors = require(\"tailwindcss/colors\");\n" <> content
+    end
+  end
+
+  defp add_color_palette(content) do
+    default_colors = [
+      primary: "colors.blue",
+      secondary: "colors.pink",
+      success: "colors.green",
+      danger: "colors.red",
+      warning: "colors.yellow",
+      info: "colors.sky",
+      gray: "colors.gray"
+    ]
+
+    case extract_previous_colors(content) do
+      {:ok, colors} ->
+          updated_color_string = get_updated_color_string(colors, default_colors)
+
+          if updated_color_string != colors do
+            String.replace(content, colors, updated_color_string)
+          else
+            content
+          end
+      nil ->
+          updated_color_string = get_updated_color_string("{\n      }", default_colors)
+          String.replace(content, "extend: {", "extend: {\n      colors: #{updated_color_string},", global: false)
+    end
+  end
+
+  defp extract_previous_colors(content) do
+    case Regex.run(~r/colors:\s*(\{[^}]+\})/, content) do
+      [_, colors_string] ->
+        {:ok, colors_string}
+      nil ->
+        nil
+    end
+  end
+
+  defp get_updated_color_string(existing_colors, default_colors) do
+    Enum.reduce(default_colors, existing_colors,
+      fn {key, value}, acc ->
+        if String.contains?(acc, "#{key}:") do
+          acc
+        else
+          String.trim_trailing(acc, "}") <> "  #{key}: #{value},\n      }"
+        end
+    end)
   end
 
   defp copy_all_components(project_name) do
