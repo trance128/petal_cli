@@ -201,13 +201,13 @@ defmodule Mix.Tasks.Petal.Install do
 
   defp add_color_palette(content) do
     default_colors = [
-      primary: "colors.blue",
-      secondary: "colors.pink",
-      success: "colors.green",
-      danger: "colors.red",
-      warning: "colors.yellow",
-      info: "colors.sky",
-      gray: "colors.gray"
+      primary:    "colors.blue",
+      secondary:  "colors.pink",
+      success:    "colors.green",
+      danger:     "colors.red",
+      warning:    "colors.yellow",
+      info:       "colors.sky",
+      gray:       "colors.gray"
     ]
 
     case extract_previous_colors(content) do
@@ -340,7 +340,8 @@ defmodule Mix.Tasks.Petal.Install do
           {:ok, project_name} <- get_project_name(),
           :ok <- add_alpine_js(project_name),
           :ok <- update_tailwind_config(),
-          {:ok, _} <- create_petal_components_folder(project_name)
+          {:ok, _} <- create_petal_components_folder(project_name),
+          :ok <- copy_specific_component("helpers", project_name)
     do
       IO.puts "\n\n🎊 Finished Setup 🎊\n\n"
     else
@@ -352,7 +353,6 @@ defmodule Mix.Tasks.Petal.Install do
     if do_phoenix_project?() do
       :ok
     else
-      IO.puts "Error: This doesn't appear to be a Phoenix project"
       {:error, "Error: This doesn't appear to be a Phoenix project"}
     end
   end
