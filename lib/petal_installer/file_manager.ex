@@ -13,7 +13,7 @@ defmodule PetalInstaller.FileManager do
   @doc """
     Copies a single file
   """
-  def copy(source_path, to_path, error_message) do
+  def copy(source_path, to_path, error_message \\ "Failed to copy files") do
     case File.cp(source_path, to_path) do
       :ok ->
         :ok
@@ -47,6 +47,12 @@ defmodule PetalInstaller.FileManager do
       :ok               -> {:ok, file_path}
       {:error, reason}  -> {:error, reason}
     end
+  end
+
+  def get_web_namespace do
+    Process.get(:project_name)
+    |> Macro.camelize()
+    |> Kernel.<>("Web")
   end
 
 
@@ -137,5 +143,13 @@ defmodule PetalInstaller.FileManager do
 
   def write(path, content) do
     File.write(path, content)
+  end
+
+  def ls!(path) do
+    File.ls!(path)
+  end
+
+  def mkdir(path) do
+    File.mkdir(path)
   end
 end

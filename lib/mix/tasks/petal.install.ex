@@ -13,8 +13,11 @@ defmodule Mix.Tasks.Petal.Install do
         aliases:  [l: :list, s: :setup, a: :all]
       )
 
-      IO.inspect(opts, label: "opts")
-      IO.inspect(component_names, label: "component_names")
+    IO.inspect(opts, label: "opts")
+    IO.inspect(component_names, label: "component_names")
+
+    {:ok, project_name} = ProjectHelper.get_project_name()
+    FileManager.set_project_name(project_name)
 
     case opts do
       [all: true]   -> do_all()
@@ -28,8 +31,6 @@ defmodule Mix.Tasks.Petal.Install do
     with  :ok <- ProjectHelper.phoenix_project?(),
           :ok <- ConfigManager.copy_petals_css(),
           :ok <- ConfigManager.update_css_imports(),
-          {:ok, project_name} <- ProjectHelper.get_project_name(),
-          :ok <- FileManager.set_project_name(project_name),
           :ok <- ConfigManager.add_alpine_js(),
           :ok <- ConfigManager.update_tailwind_config(),
           :ok <- ComponentManager.copy_all_components()
@@ -44,8 +45,6 @@ defmodule Mix.Tasks.Petal.Install do
     with  :ok <- ProjectHelper.phoenix_project?(),
           :ok <- ConfigManager.copy_petals_css(),
           :ok <- ConfigManager.update_css_imports(),
-          {:ok, project_name} <- ProjectHelper.get_project_name(),
-          :ok <- FileManager.set_project_name(project_name),
           :ok <- ConfigManager.add_alpine_js(),
           :ok <- ConfigManager.update_tailwind_config(),
           {:ok, _} <- FileManager.create_petal_components_folder(),
