@@ -3,6 +3,37 @@ defmodule Mix.Tasks.Petal.Install do
 
   @shortdoc "Installs Petal UI components"
 
+  ## all valid components
+  @components [
+    "accordion",
+    "alert",
+    "avatar",
+    "badge",
+    "breadcrumbs",
+    "button",
+    "card",
+    "container",
+    "dropdown",
+    "form",
+    "helpers",
+    "icon",
+    "input",
+    "link",
+    "loading",
+    "menu",
+    "modal",
+    "pagination",
+    "pagination_internal",
+    "progress",
+    "rating",
+    "skeleton",
+    "slide_over",
+    "table",
+    "tabs",
+    "typography",
+    "user_dropdown_menu",
+  ]
+
   def run(args) do
     IO.inspect(args, label: "args")
 
@@ -216,13 +247,89 @@ defmodule Mix.Tasks.Petal.Install do
 
   defp copy_all_components(project_name) do
     source_path = Path.join(["deps", "petal_components", "lib"])
-    to_path = Path.join(["lib", "#{project_name}_web", "components"])
+    to_path     = Path.join(["lib", "#{project_name}_web", "components"])
 
     case File.cp_r(source_path, to_path) do
       {:ok, _}            ->
           :ok
       {:error, reason, _} ->
           {:error, "Error copying components: #{reason}"}
+    end
+  end
+
+  defp fetch_components([]) do
+    IO.puts "Specify component names or use --list to see available components"
+  end
+
+  defp fetch_components(component_names) do
+    with {:ok, project_name} <- get_project_name() do
+      res = Enum.map(component_names, &fetch_component(&1, project_name))
+
+      if Enum.any?(res, &match?({:error, _}, &1)) do
+        Enum.each(res, fn
+            {:error, reason}  -> IO.puts reason
+            _                 -> nil
+        end)
+
+        IO.puts "Task Finished"
+      else
+        IO.puts "\n\n🎊 Finished fetching #{component_names} 🎊\n\n"
+      end
+    else
+      {:error, reason}  -> IO.puts "#{reason}"
+    end
+  end
+
+  defp fetch_component(name, project_name) do
+    cond do
+      name == "icon"                   ->
+          handle_icon_component(project_name)
+      name == "pagination"             ->
+          handle_pagination_component(project_name)
+      Enum.member?(@components, name)  ->
+          copy_specific_component(name, project_name)
+      true                             ->
+          {:error, "Component #{name} not found"}
+    end
+  end
+
+  defp copy_specific_component(component_name, project_name) do
+    source_path = Path.join(["deps", "petal_components", "lib", "petal_components", "#{component_name}.ex"])
+    to_path     = Path.join(["lib", "#{project_name}_web", "components", "petal_components", "#{component_name}.ex"])
+
+    case File.cp(source_path, to_path) do
+      :ok ->
+        :ok
+      {:error, reason} ->
+        {:error, "Error copying component #{component_name}: #{reason}"}
+    end
+  end
+
+  defp handle_icon_component(project_name) do
+    with  :ok <- copy_specific_component("icon", project_name),
+          :ok <- copy_icon_folder(project_name)
+    do
+          :ok
+    end
+  end
+
+  defp copy_icon_folder(project_name) do
+    source_path = Path.join(["deps", "petal_components", "lib", "petal_components", "icons"])
+    to_path     = Path.join(["lib", "#{project_name}_web", "components", "petal_components", "icons"])
+
+    case File.cp_r(source_path, to_path) do
+      {:ok, _}            ->
+          :ok
+      {:error, reason, _} ->
+          {:error, "Error copying components: #{reason}"}
+    end
+  end
+
+  defp handle_pagination_component(project_name) do
+    with  :ok <- copy_specific_component("pagination", project_name),
+          :ok <- copy_specific_component("pagination_internal", project_name)
+    do
+          :ok
     end
   end
 
@@ -280,61 +387,7 @@ defmodule Mix.Tasks.Petal.Install do
     end
   end
 
-  defp fetch_components([]) do
-    IO.puts "Specify component names or use --list to see available components"
-  end
-
-  defp fetch_components(component_names) do
-    Enum.each(component_names, &fetch_component/1)
-  end
-
-  defp fetch_component(name) do
-    case get_component_content(name) do
-      # {:ok, content}    -> save_component(name, content)
-      # {:error, reason}  -> IO.puts "Error fetching component #{name}: #{reason}"
-      _                 -> IO.puts "An unexpected error ocurred"
-    end
-  end
-
-  defp get_component_content(name) do
-    IO.puts "Fake getting #{name}"
-  end
-
-  # defp save_component(name, _content) do
-  #   IO.puts "fake saving component with name #{name}"
-  # end
-
   defp list_components do
-    components = [
-      "accordion",
-      "alert",
-      "avatar",
-      "badge",
-      "breadcrumbs",
-      "button",
-      "card",
-      "container",
-      "dropdown",
-      "form",
-      "helpers",
-      "icon",
-      "input",
-      "link",
-      "loading",
-      "menu",
-      "modal",
-      "pagination",
-      "pagination_internal",
-      "progress",
-      "rating",
-      "skeleton",
-      "slide_over",
-      "table",
-      "tabs",
-      "typography",
-      "user_dropdown_menu",
-    ]
-
-    Enum.each(components, &IO.puts/1)
+    Enum.each(@components, &IO.puts/1)
   end
 end
