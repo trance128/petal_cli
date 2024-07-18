@@ -22,8 +22,6 @@ defmodule Mix.Tasks.Petal.Install do
   ]
 
   def run(args) do
-    IO.inspect(args, label: "args")
-
     {opts, component_names, _} =
       OptionParser.parse(args,
         switches: @switches,
