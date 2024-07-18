@@ -271,7 +271,7 @@ defmodule Mix.Tasks.Petal.Install do
             _                 -> nil
         end)
 
-        IO.puts "Task Finished"
+        IO.puts "\nTask Finished\n"
       else
         IO.puts "\n\n🎊 Finished fetching #{component_names} 🎊\n\n"
       end
@@ -294,11 +294,26 @@ defmodule Mix.Tasks.Petal.Install do
   ### Will also fetch any dependencies if they don't already exist in users' project
   defp copy_specific_component(component_name, project_name) do
     source_path = component_source_path(component_name)
-
-    ## TODO add a confirmation if file already exists.  Do you wish to overwrite, or nah?
-
-    extract_and_get_dependencies(source_path, project_name)
     to_path = component_to_path(component_name, project_name)
+
+    if File.exists?(to_path) do
+      IO.puts("The file for #{IO.ANSI.bright()}#{IO.ANSI.yellow()}#{component_name}#{IO.ANSI.reset()} already exists at #{IO.ANSI.bright()}#{IO.ANSI.yellow}#{to_path}#{IO.ANSI.reset()}.")
+      response = IO.gets("Overwrite?  (y/n):  ") |> String.trim() |> String.downcase()
+
+      case response do
+        "y" -> cont_copy_component(source_path, to_path, component_name, project_name)
+        _   ->
+          IO.puts("Skipping #{component_name}")
+          :ok
+      end
+
+    else
+      cont_copy_component(source_path, to_path, component_name, project_name)
+    end
+  end
+
+  defp cont_copy_component(source_path, to_path, component_name, project_name) do
+    extract_and_get_dependencies(source_path, project_name)
     copy_file(source_path, to_path, "Error copying component #{component_name}")
   end
 
