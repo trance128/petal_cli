@@ -27,7 +27,6 @@ defmodule PetalCli.MixProject do
     [
       {:ex_doc, "~> 0.34", only: :dev, runtime: false},
       {:petal_components, "~> 1.9"},
-      {:jason, "~> 1.2"}
     ]
   end
 
