@@ -284,8 +284,6 @@ defmodule Mix.Tasks.Petal.Install do
     cond do
       name == "icon"                   ->
           handle_icon_component(project_name)
-      name == "pagination"             ->
-          handle_pagination_component(project_name)
       Enum.member?(@components, name)  ->
           copy_specific_component(name, project_name)
       true                             ->
@@ -293,15 +291,62 @@ defmodule Mix.Tasks.Petal.Install do
     end
   end
 
+  ### Will also fetch any dependencies if they don't already exist in users' project
   defp copy_specific_component(component_name, project_name) do
-    source_path = Path.join(["deps", "petal_components", "lib", "petal_components", "#{component_name}.ex"])
-    to_path     = Path.join(["lib", "#{project_name}_web", "components", "petal_components", "#{component_name}.ex"])
+    source_path = component_source_path(component_name)
 
+    ## TODO add a confirmation if file already exists.  Do you wish to overwrite, or nah?
+
+    extract_and_get_dependencies(source_path, project_name)
+    to_path = component_to_path(component_name, project_name)
+    copy_file(source_path, to_path, "Error copying component #{component_name}")
+  end
+
+  ### Checks for any component dependencies, and installs them if not present
+  defp extract_and_get_dependencies(source_path, project_name) do
+    content = File.read!(source_path)
+
+    dependencies = extract_dependencies(content)
+    Enum.each(dependencies, fn dep ->
+      handle_component_dependency(dep, project_name)
+    end)
+  end
+
+  ### Similar to copy_specific_component, except doesn't ask the user to overwrite files
+  ### if user already has the file, no overwrite occurs
+  defp handle_component_dependency(component_name, project_name) do
+    target_path = component_to_path(component_name, project_name)
+
+    if not File.exists?(target_path) do
+      source_path = component_source_path(component_name)
+      extract_and_get_dependencies(source_path, project_name)
+
+      copy_file(source_path, target_path, "Error copying component #{component_name}")
+    end
+  end
+
+  defp extract_dependencies(content) do
+    alias_regex   = ~r/alias\s+PetalComponents\.([A-Z][a-zA-Z]+)/
+    import_regex  = ~r/import\s+PetalComponents\.([A-Z][a-zA-Z]+)/
+
+    aliases = Regex.scan(alias_regex, content) |> Enum.map(& get_dependency_name/1)
+    imports = Regex.scan(import_regex, content) |> Enum.map(& get_dependency_name/1)
+
+    (aliases ++ imports) |> Enum.uniq()
+  end
+
+  defp get_dependency_name(scan_result) do
+    scan_result
+    |> List.last()
+    |> Macro.underscore()
+  end
+
+  defp copy_file(source_path, to_path, error_message) do
     case File.cp(source_path, to_path) do
       :ok ->
         :ok
       {:error, reason} ->
-        {:error, "Error copying component #{component_name}: #{reason}"}
+        {:error, "#{error_message}: #{reason}"}
     end
   end
 
@@ -322,14 +367,6 @@ defmodule Mix.Tasks.Petal.Install do
           :ok
       {:error, reason, _} ->
           {:error, "Error copying components: #{reason}"}
-    end
-  end
-
-  defp handle_pagination_component(project_name) do
-    with  :ok <- copy_specific_component("pagination", project_name),
-          :ok <- copy_specific_component("pagination_internal", project_name)
-    do
-          :ok
     end
   end
 
@@ -390,4 +427,7 @@ defmodule Mix.Tasks.Petal.Install do
   defp list_components do
     Enum.each(@components, &IO.puts/1)
   end
+
+  defp component_source_path(component_name), do: Path.join(["deps", "petal_components", "lib", "petal_components", "#{component_name}.ex"])
+  defp component_to_path(component_name, project_name), do: Path.join(["lib", "#{project_name}_web", "components", "petal_components", "#{component_name}.ex"])
 end
