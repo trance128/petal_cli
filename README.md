@@ -2,6 +2,19 @@
 
 This project started as a way to import petal components into a project, but will be expanded to cover other components libraries also.  Currently adding support for salad ui
 
+This tool can currently be used to import all salad ui components with the --salad flag:
+```
+mix petal.install --salad
+```
+however, this doesn't yet support individual components and tailwind colours are not correctly being added, so that step's omitted currently
+Currently, these 3 tailwind plugins are still added:
+- tailwindcss-animate
+    - the tailwindcss-animate js file is added in your project at [assets/js/tailwindcss-animate.js]
+- tailwindcss-typography
+- tailwindcss/forms
+
+tailwind-css animate hasn't been tested yet
+
 # Petal CLI
 
 Components are installed into your project's *lib/[app_name_web]/components/* , directory giving you full control over the code
@@ -49,9 +62,10 @@ mix petal.install [options] [component names]
 ```
 
 ### Options
-- --install-all, -a     : Runs setup, and installs all components
-- --setup, -s           : Perform setup without installing components
-- --list, -l            : List available components
+- --salad               : installs salad ui, all components
+- --install-all, -a     : Runs setup, and installs all petal components
+- --setup, -s           : Perform petal setup without installing components
+- --list, -l            : List available petal components
 - --help, -h            : Print the help message
 - --no-alpine           : Skip adding Alpine.js
 - --no-rename           : Skip renaming components (keep original namespaces)
@@ -59,6 +73,7 @@ mix petal.install [options] [component names]
 
 ### Examples
 ```
+mix petal.install --salad
 mix petal.install --install-all
 mix petal.install -a --no-alpine --no-rename
 mix petal.install --setup
