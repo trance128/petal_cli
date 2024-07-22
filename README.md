@@ -1,3 +1,7 @@
+# Component Importer
+
+This project started as a way to import petal components into a project, but will be expanded to cover other components libraries also.  Currently adding support for salad ui
+
 # Petal CLI
 
 Components are installed into your project's *lib/[app_name_web]/components/* , directory giving you full control over the code
@@ -74,7 +78,6 @@ renaming).
 ```
 {:heroicons, "~> 2.x", override: true}
 ```
-- *Project Name Detection*: The tool determines your app name by checking the mix.exs file and matching for app: :app_name or app: "app_name".
 - *Component Overwriting*:
     - Using --install-all will overwrite previously installed components without prompting.
     - When installing individual components, you'll be asked if you want to overwrite existing files.
@@ -95,3 +98,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 This project is licensed under the MIT License.
+

@@ -30,4 +30,12 @@ defmodule PetalInstaller.Constants do
       "user_dropdown_menu",
     ]
   end
+
+  def salad do
+    :salad
+  end
+
+  def petal do
+    :petal
+  end
 end

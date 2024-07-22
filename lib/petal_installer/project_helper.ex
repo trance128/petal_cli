@@ -17,16 +17,7 @@ defmodule PetalInstaller.ProjectHelper do
   end
 
   def get_project_name do
-    case FileManager.read("mix.exs") do
-      {:ok, content}    ->
-        case Regex.run(~r/app: :?(\w+)/, content) do
-          [_, app_name]   ->
-            {:ok, app_name}
-          nil             ->
-            {:error, "Unable to determine project name from mix.exs"}
-        end
-      {:error, reason}  ->
-          {:error, "Error reading mix.exs: #{reason}"}
-    end
+    # Mix.Project.config()[:app]
+    Mix.Project.get().project()[:app]
   end
 end

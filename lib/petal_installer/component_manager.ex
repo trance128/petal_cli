@@ -1,19 +1,20 @@
 defmodule PetalInstaller.ComponentManager do
   alias   PetalInstaller.{FileManager, Constants}
 
-  def copy_all_components(no_rename?) do
+  @spec copy_all_components(boolean(), atom()) :: :ok | {:error, String.t()}
+  def copy_all_components(no_rename?, framework) do
     if no_rename? do
-      FileManager.get_copy_all_component_paths()
+      FileManager.get_copy_all_component_paths(framework)
       |> FileManager.recursive_copy()
     else
       web_namespace = FileManager.get_web_namespace()
 
-      FileManager.get_copy_all_component_paths()
-      |> copy_and_modify_recursively(web_namespace)
+      FileManager.get_copy_all_component_paths(framework)
+      |> copy_and_modify_recursively(web_namespace, framework)
     end
   end
 
-  defp copy_and_modify_recursively({source_dir, dest_dir}, web_namespace) do
+  defp copy_and_modify_recursively({source_dir, dest_dir}, web_namespace, framework) do
     FileManager.mkdir(dest_dir)
 
     FileManager.ls!(source_dir)
@@ -22,25 +23,29 @@ defmodule PetalInstaller.ComponentManager do
       dest_path =   Path.join(dest_dir, item)
 
       cond do
-        File.dir?(source_path) -> copy_and_modify_recursively({source_path, dest_path}, web_namespace)
+        File.dir?(source_path) -> copy_and_modify_recursively({source_path, dest_path}, web_namespace, framework)
 
         Path.extname(item) == ".ex" ->
-          modify_and_write_component(source_path, dest_path, web_namespace)
+          modify_and_write_component(source_path, dest_path, web_namespace, framework)
 
         true -> FileManager.copy(source_path, dest_path)
       end
     end)
   end
 
-  defp modify_and_write_component(source_path, dest_path, web_namespace) do
+  defp modify_and_write_component(source_path, dest_path, web_namespace, framework) do
     content = File.read!(source_path)
-    modified_content = add_web_namespace_to_component(content, web_namespace)
+    modified_content = add_web_namespace_to_component(content, web_namespace, framework)
     FileManager.write(dest_path, modified_content)
   end
 
-  defp add_web_namespace_to_component(content, web_namespace) do
+  defp add_web_namespace_to_component(content, web_namespace, :petal) do
     content
     |> String.replace(~r/(\s|^)PetalComponents/, "\\1#{web_namespace}.PetalComponents")
+  end
+  defp add_web_namespace_to_component(content, web_namespace, :salad) do
+    content
+    |> String.replace(~r/(\s|^)SaladUI/, "\\1#{web_namespace}.SaladUI")
   end
 
   def fetch_components([], _) do
@@ -100,7 +105,7 @@ defmodule PetalInstaller.ComponentManager do
       web_namespace = FileManager.get_web_namespace()
 
       extract_and_get_dependencies(source_path, web_namespace)
-      modify_and_write_component(source_path, to_path, web_namespace)
+      modify_and_write_component(source_path, to_path, web_namespace, :petal)
     end
   end
 
@@ -141,7 +146,7 @@ defmodule PetalInstaller.ComponentManager do
 
     if not FileManager.exists?(target_path) do
       extract_and_get_dependencies(source_path, web_namespace)
-      modify_and_write_component(source_path, target_path, web_namespace)
+      modify_and_write_component(source_path, target_path, web_namespace, :petal)
     end
   end
 
@@ -175,7 +180,7 @@ defmodule PetalInstaller.ComponentManager do
       FileManager.recursive_copy({source, dest})
     else
       web_namespace = FileManager.get_web_namespace()
-      modify_and_write_component(source, dest, web_namespace)
+      modify_and_write_component(source, dest, web_namespace, :petal)
     end
   end
 end

@@ -12,6 +12,7 @@ defmodule Mix.Tasks.Petal.Install do
     no_alpine: :boolean,
     no_rename: :boolean,
     no_tailwind_config: :boolean,
+    salad: :boolean,
   ]
 
   @aliases [
@@ -28,21 +29,32 @@ defmodule Mix.Tasks.Petal.Install do
         aliases:  @aliases
       )
 
-    {:ok, project_name} = ProjectHelper.get_project_name()
-    FileManager.set_project_name(project_name)
+    FileManager.set_project_name(ProjectHelper.get_project_name())
 
     cond do
       opts[:help]         -> print_help()
       opts[:list]         -> list_components()
+      opts[:salad]        -> install_salad(opts)
       opts[:install_all]  -> do_install_all(opts)
       true                -> do_install(opts, component_names)
     end
   end
 
+  defp install_salad(opts) do
+    with  :ok <- ProjectHelper.phoenix_project?(),
+          :ok <- perform_salad_setup(opts),
+          :ok <- ComponentManager.copy_all_components(opts[:no_rename], :salad)
+    do
+      IO.puts "\n\n🎊 Finished 🎊\n\n"
+    else
+      {:error, reason} -> IO.puts reason
+    end
+  end
+
   defp do_install_all(opts) do
     with  :ok <- ProjectHelper.phoenix_project?(),
-          :ok <- perform_setup(opts),
-          :ok <- ComponentManager.copy_all_components(opts[:no_rename])
+          :ok <- perform_petal_setup(opts),
+          :ok <- ComponentManager.copy_all_components(opts[:no_rename], :petal)
     do
       IO.puts "\n\n🎊 Finished 🎊\n\n"
     else
@@ -52,7 +64,7 @@ defmodule Mix.Tasks.Petal.Install do
 
   defp do_install(opts, component_names) do
     with  :ok <- ProjectHelper.phoenix_project?(),
-          :ok <- maybe_perform_setup(opts),
+          :ok <- maybe_perform_petal_setup(opts),
           :ok <- ComponentManager.fetch_components(component_names, opts[:no_rename])
     do
       IO.puts get_finish_message(opts, component_names)
@@ -61,20 +73,33 @@ defmodule Mix.Tasks.Petal.Install do
     end
   end
 
-  defp maybe_perform_setup(opts) do
+  defp maybe_perform_petal_setup(opts) do
     if opts[:setup] do
-      perform_setup(opts)
+      perform_petal_setup(opts)
     else
       :ok
     end
   end
 
-  defp perform_setup(opts) do
-    with  :ok <- ConfigManager.copy_petals_css(),
-          :ok <- ConfigManager.update_css_imports(),
+  defp perform_salad_setup(opts) do
+    with  :ok <- ConfigManager.copy_css(Constants.salad()),
+          :ok <- ConfigManager.update_css_imports(Constants.salad()),
+          :ok <- maybe_update_tailwind_config(opts, Constants.salad()),
+          {:ok, _} <- FileManager.create_component_folder(:salad)
+
+    do
+      :ok
+    else
+      {:error, reason} -> IO.puts reason
+    end
+  end
+
+  defp perform_petal_setup(opts) do
+    with  :ok <- ConfigManager.copy_css(Constants.petal()),
+          :ok <- ConfigManager.update_css_imports(Constants.petal()),
           :ok <- maybe_add_alpine_js(opts),
-          :ok <- maybe_update_tailwind_config(opts),
-          {:ok, _} <- FileManager.create_petal_components_folder(),
+          :ok <- maybe_update_tailwind_config(opts, Constants.petal()),
+          {:ok, _} <- FileManager.create_component_folder(:petal),
           :ok <- ComponentManager.copy_specific_component("helpers", opts[:no_rename])
     do
           :ok
@@ -87,8 +112,8 @@ defmodule Mix.Tasks.Petal.Install do
     if opts[:no_alpine], do: :ok, else: ConfigManager.add_alpine_js()
   end
 
-  defp maybe_update_tailwind_config(opts) do
-    if opts[:no_tailwind_config], do: :ok, else: ConfigManager.update_tailwind_config()
+  defp maybe_update_tailwind_config(opts, framework) do
+    if opts[:no_tailwind_config], do: :ok, else: ConfigManager.update_tailwind_config(framework)
   end
 
   def get_finish_message(opts, component_names) do
