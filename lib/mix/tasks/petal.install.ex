@@ -1,6 +1,6 @@
 defmodule Mix.Tasks.Petal.Install do
   use     Mix.Task
-  alias   PetalInstaller.{ComponentManager, FileManager, ConfigManager, ProjectHelper, Constants}
+  alias   PetalInstaller.{ComponentManager, FileManager, ConfigManager, ProjectHelper, Constants, CSSParser}
 
   @shortdoc "Installs Petal UI components "
 
@@ -31,12 +31,20 @@ defmodule Mix.Tasks.Petal.Install do
 
     FileManager.set_project_name(ProjectHelper.get_project_name())
 
-    cond do
-      opts[:help]         -> print_help()
-      opts[:list]         -> list_components()
-      opts[:salad]        -> install_salad(opts)
-      opts[:install_all]  -> do_install_all(opts)
-      true                -> do_install(opts, component_names)
+    {:ok, _pid} = CSSParser.start_link("deps/petal_components/assets/default.css")
+
+    try do
+
+      cond do
+        opts[:help]         -> print_help()
+        # opts[:list]         -> list_components()
+        # opts[:salad]        -> install_salad(opts)
+        opts[:install_all]  -> do_install_all(opts)
+        true                -> do_install(opts, component_names)
+      end
+
+    after
+      GenServer.stop(CSSParser)
     end
   end
 
@@ -52,9 +60,9 @@ defmodule Mix.Tasks.Petal.Install do
   end
 
   defp do_install_all(opts) do
-    with  :ok <- ProjectHelper.phoenix_project?(),
-          :ok <- perform_petal_setup(opts),
-          :ok <- ComponentManager.copy_all_components(opts[:no_rename], :petal)
+    with  :ok <- ComponentManager.copy_all_components(opts[:no_rename], :petal)
+          # :ok <- ProjectHelper.phoenix_project?(),
+          # :ok <- perform_petal_setup(opts),
     do
       IO.puts "\n\n🎊 Finished 🎊\n\n"
     else
@@ -63,14 +71,16 @@ defmodule Mix.Tasks.Petal.Install do
   end
 
   defp do_install(opts, component_names) do
-    with  :ok <- ProjectHelper.phoenix_project?(),
-          :ok <- maybe_perform_petal_setup(opts),
-          :ok <- ComponentManager.fetch_components(component_names, opts[:no_rename])
-    do
-      IO.puts get_finish_message(opts, component_names)
-    else
-      {:error, reason} -> IO.puts reason
-    end
+    IO.puts("temp disabled")
+
+    # with  :ok <- ProjectHelper.phoenix_project?(),
+    #       :ok <- maybe_perform_petal_setup(opts),
+    #       :ok <- ComponentManager.fetch_components(component_names, opts[:no_rename])
+    # do
+    #   IO.puts get_finish_message(opts, component_names)
+    # else
+    #   {:error, reason} -> IO.puts reason
+    # end
   end
 
   defp maybe_perform_petal_setup(opts) do

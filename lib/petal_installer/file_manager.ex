@@ -88,14 +88,12 @@ defmodule PetalInstaller.FileManager do
   """
   @spec get_copy_all_component_paths(atom()) :: {binary(), binary()}
   def get_copy_all_component_paths(framework) do
-    project_name = Process.get(:project_name)
-
     source_path =
       case framework do
         :petal -> Path.join(["deps", "petal_components",  "lib"])
         :salad -> Path.join(["deps", "salad_ui",          "lib"]);
       end
-    dest_path     = Path.join(["lib", "#{project_name}_web", "components"])
+    dest_path     = Path.join(["lib", "PC"])
 
     {source_path, dest_path}
   end

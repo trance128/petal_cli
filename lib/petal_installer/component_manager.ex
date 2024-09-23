@@ -39,13 +39,39 @@ defmodule PetalInstaller.ComponentManager do
     FileManager.write(dest_path, modified_content)
   end
 
-  defp add_web_namespace_to_component(content, web_namespace, :petal) do
+  defp add_web_namespace_to_component(content, _, :petal) do
     content
-    |> String.replace(~r/(\s|^)PetalComponents/, "\\1#{web_namespace}.PetalComponents")
+    |> String.replace(~r/(\s|^)PetalComponents/, "PC")
+    |> replace_petal_classes_with_tailwind()
   end
   defp add_web_namespace_to_component(content, web_namespace, :salad) do
     content
     |> String.replace(~r/(\s|^)SaladUI/, "\\1#{web_namespace}.SaladUI")
+  end
+
+  @spec replace_petal_classes_with_tailwind(binary()) :: binary()
+  defp replace_petal_classes_with_tailwind(content) do
+    # This regex will match class attributes in HTML
+    class_regex = ~r"class=\{?([\"'])([^\"']+)\1\}?"
+
+    content |>
+      String.replace(class_regex, fn _whole_match, qu, classes ->
+        replaced_classes =
+          classes
+          |> String.split()
+          |> Enum.map(&replace_single_class/1)
+          |> Enum.join(" ")
+
+        "class=#{qu}#{replaced_classes}#{qu}"
+      end)
+  end
+
+  @spec replace_single_class(binary()) :: binary()
+  defp replace_single_class(class) do
+    case PetalInstaller.CSSParser.get_tailwind_classes(class) do
+      nil -> class  # If no replacement found, keep the original class
+      tailwind_classes when is_binary(tailwind_classes) -> tailwind_classes
+    end
   end
 
   def fetch_components([], _) do
