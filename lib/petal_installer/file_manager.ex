@@ -2,7 +2,7 @@ defmodule PetalInstaller.FileManager do
   @salad :salad
   @petal :petal
 
-  @package_name :petal_cli
+  @package_name "petal_cli"
 
   @doc """
     Saves the project name into FileManager process
@@ -107,6 +107,14 @@ defmodule PetalInstaller.FileManager do
     returns path | {source_path, dest_path}
   """
   @spec get_paths(atom()) :: Path.t() | {Path.t(), Path.t()}
+  def get_paths(:tw_animate) do
+    {
+      # source_path
+      Path.join(["deps", @package_name, "assets", "tailwindcss-animate.js"]),
+      # dest_path
+      Path.join(["assets", "js", "tailwindcss-animate.js"])
+    }
+  end
   def get_paths(:app_css) do
     Path.join(["assets", "css", "app.css"])
   end
@@ -117,14 +125,7 @@ defmodule PetalInstaller.FileManager do
   def get_paths(:tailwind_config) do
     Path.join(["assets", "tailwind.config.js"])
   end
-  def get_paths(:tailwind_animate) do
-    {
-      # source_path
-      Path.join(["deps", @package_name, "assets", "tailwindcss-animate.js"]),
-      # dest_path
-      Path.join(["assets", "js", "tailwindcss-animate.js"])
-    }
-  end
+
 
   @spec get_paths(atom(), atom()) :: {Path.t(), Path.t()}
   def get_paths(@salad, :css) do

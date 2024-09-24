@@ -270,8 +270,7 @@ defmodule PetalInstaller.ConfigManager do
   end
 
   defp add_tailwind_animate_js_file do
-    paths = FileManager.get_paths(:tailwind_animate)
-    {source, dest} = paths
+    {source, dest} = FileManager.get_paths(:tw_animate)
     FileManager.copy(source, dest)
   end
 end
