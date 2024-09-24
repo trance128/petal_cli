@@ -43,6 +43,10 @@ defmodule PetalInstaller.ComponentManager do
     content
     |> String.replace(~r/(\s|^)PetalComponents/, "\\1#{web_namespace}.PetalComponents")
   end
+  defp add_web_namespace_to_component(content, web_namespace, :garden_fusion) do
+    content
+    |> String.replace(~r/(\s|^)PC/, "\\1#{web_namespace}.PC")
+  end
   defp add_web_namespace_to_component(content, web_namespace, :salad) do
     content
     |> String.replace(~r/(\s|^)SaladUI/, "\\1#{web_namespace}.SaladUI")

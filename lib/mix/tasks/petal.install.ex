@@ -13,13 +13,15 @@ defmodule Mix.Tasks.Petal.Install do
     no_rename: :boolean,
     no_tailwind_config: :boolean,
     salad: :boolean,
+    garden_fusion: :boolean,
   ]
 
   @aliases [
     l: :list,
     a: :install_all,
     s: :setup,
-    h: :help
+    h: :help,
+    g: :garden_fusion
   ]
 
   def run(args) do
@@ -35,6 +37,7 @@ defmodule Mix.Tasks.Petal.Install do
       opts[:help]         -> print_help()
       opts[:list]         -> list_components()
       opts[:salad]        -> install_salad(opts)
+      opts[:garden_fusion] -> install_garden_fusion(opts)
       opts[:install_all]  -> do_install_all(opts)
       true                -> do_install(opts, component_names)
     end
@@ -44,6 +47,16 @@ defmodule Mix.Tasks.Petal.Install do
     with  :ok <- ProjectHelper.phoenix_project?(),
           :ok <- perform_salad_setup(opts),
           :ok <- ComponentManager.copy_all_components(opts[:no_rename], :salad)
+    do
+      IO.puts "\n\n🎊 Finished 🎊\n\n"
+    else
+      {:error, reason} -> IO.puts reason
+    end
+  end
+
+  defp install_garden_fusion(opts) do
+    with  :ok <- ProjectHelper.phoenix_project?(),
+          :ok <- ComponentManager.copy_all_components(opts[:no_rename], :garden_fusion)
     do
       IO.puts "\n\n🎊 Finished 🎊\n\n"
     else
@@ -135,6 +148,11 @@ defmodule Mix.Tasks.Petal.Install do
       --no-alpine           Skip adding Alpine.js
       --no-rename           Skip renaming components (keep original namespaces)
       --no-tailwind-config  Skip updating Tailwind configuration
+      --garden_fusion, -g   Installs all Garden Fusion components.  This is unfinished and use is not recommended
+                            will only work if you have Garden Fusion locally, path "../.." relative to project you're
+                            running this command in.
+                            If your project is in         Code/project_name/web
+                            garden fusion must reside in  Code/garden_fusion
 
     Examples:
       mix petal.install --install-all

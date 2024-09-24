@@ -92,8 +92,9 @@ defmodule PetalInstaller.FileManager do
 
     source_path =
       case framework do
-        :petal -> Path.join(["deps", "petal_components",  "lib"])
-        :salad -> Path.join(["deps", "salad_ui",          "lib"]);
+        :petal ->         Path.join(["deps",  "petal_components",  "lib"])
+        :salad ->         Path.join(["deps",  "salad_ui",          "lib"]);
+        :garden_fusion -> Path.join(["..", "..", "garden_fusion",  "lib"])
       end
     dest_path     = Path.join(["lib", "#{project_name}_web", "components"])
 
@@ -107,14 +108,6 @@ defmodule PetalInstaller.FileManager do
     returns path | {source_path, dest_path}
   """
   @spec get_paths(atom()) :: Path.t() | {Path.t(), Path.t()}
-  def get_paths(:tw_animate) do
-    {
-      # source_path
-      Path.join(["deps", @package_name, "assets", "tailwindcss-animate.js"]),
-      # dest_path
-      Path.join(["assets", "js", "tailwindcss-animate.js"])
-    }
-  end
   def get_paths(:app_css) do
     Path.join(["assets", "css", "app.css"])
   end
@@ -124,6 +117,14 @@ defmodule PetalInstaller.FileManager do
   end
   def get_paths(:tailwind_config) do
     Path.join(["assets", "tailwind.config.js"])
+  end
+  def get_paths(:tw_animate) do
+    {
+      # source_path
+      Path.join(["deps", @package_name, "assets", "tailwindcss-animate.js"]),
+      # dest_path
+      Path.join(["assets", "js", "tailwindcss-animate.js"])
+    }
   end
 
 
