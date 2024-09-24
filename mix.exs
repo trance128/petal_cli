@@ -32,7 +32,9 @@ defmodule PetalCli.MixProject do
       {:ex_doc, "~> 0.34", only: :dev, runtime: false},
       {:petal_components, "~> 1.9"},
       {:salad_ui, "~> 0.4.2"},
-      {:igniter, "~> 0.3"}
+      {:igniter, "~> 0.3"},
+      {:css_parser, ">= 0.1.0"},
+      {:floki, "~> 0.36"}
     ]
   end
 
