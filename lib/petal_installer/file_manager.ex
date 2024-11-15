@@ -94,9 +94,9 @@ defmodule PetalInstaller.FileManager do
       case framework do
         :petal ->         Path.join(["deps",  "petal_components",  "lib"])
         :salad ->         Path.join(["deps",  "salad_ui",          "lib"]);
-        :garden_fusion -> Path.join(["..", "..", "garden_fusion",  "lib"])
+        :garden_fusion -> Path.join(["..", "garden_fusion",  "lib", "PC"])
       end
-    dest_path     = Path.join(["lib", "#{project_name}_web", "components"])
+    dest_path     = Path.join(["lib", "#{project_name}_web", "components", "PC"])
 
     {source_path, dest_path}
   end

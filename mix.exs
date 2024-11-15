@@ -30,7 +30,7 @@ defmodule PetalCli.MixProject do
   defp deps do
     [
       {:ex_doc, "~> 0.34", only: :dev, runtime: false},
-      {:petal_components, "~> 1.9"},
+      {:petal_components, "~> 2.6"},
       {:salad_ui, "~> 0.4.2"},
     ]
   end
